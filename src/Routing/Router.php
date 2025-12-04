@@ -17,6 +17,8 @@ class Router
      */
     protected array $routes = [];
 
+    protected array $namedRoutes = [];
+
     public function __construct(
         protected Application $app
     ) {}
@@ -40,8 +42,28 @@ class Router
     {
         $this->addRoute('DELETE', $uri, $action);
     }
+    
+    public function setRouteName(string $name, string $method, string $uri): void
+    {
+        $this->namedRoutes[$name] = [$method, $uri];
+    }
 
-    protected function addRoute(string $method, string $uri, mixed $action): void
+    public function route(string $name, array $params = []): string
+    {
+        if (!isset($this->namedRoutes[$name])) {
+            throw new \RuntimeException("Route '{$name}' is not defined");
+        }
+
+        [$method, $uri] = $this->namedRoutes[$name];
+
+        foreach ($params as $key => $value) {
+            $uri = str_replace('{' . $key . '}', (string)$value, $uri);
+        }
+
+        return $uri;
+    }
+
+    protected function addRoute(string $method, string $uri, mixed $action): RouteDefinition
     {
         [$regex, $paramNames] = $this->compileUri($uri);
 
@@ -51,6 +73,8 @@ class Router
             'params' => $paramNames,
             'action' => $action,
         ];
+
+        return new RouteDefinition($this, $method, $uri, $action);
     }
 
     protected function compileUri(string $uri): array
