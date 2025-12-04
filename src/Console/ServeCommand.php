@@ -4,7 +4,7 @@ namespace Framework\Console;
 
 class ServeCommand
 {
-    public function handle(): void
+    public function handle(array $args = []): void
     {
         $host = '127.0.0.1';
         $port = 9003;

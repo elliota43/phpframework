@@ -3,10 +3,23 @@
 declare(strict_types=1);
 
 use Framework\Application;
+use Framework\Database\Connection;
 use Framework\Http\Kernel;
 use Framework\Routing\Router;
+use Framework\Database\Model as BaseModel;
 
 $app = new Application();
+
+// DB Connection (SQLite example)
+$app->singleton(Connection::class, function() {
+    // db file in project root // adjust as needed
+    $dsn = 'sqlite:' . __DIR__. '/../database.sqlite';
+
+    return new Connection($dsn);
+});
+
+BaseModel::setConnection($app->make(Connection::class));
+
 
 $app->bind(Router::class, function (Application $app) {
     $router = new Router($app);

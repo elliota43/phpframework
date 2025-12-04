@@ -9,7 +9,10 @@ class Application
     {
         $this->commands = [
             'serve' => new ServeCommand(),
-            'make:controller' => new MakeControllerCommand()
+            'make:controller' => new MakeControllerCommand(),
+            'migrate' => new MigrateCommand(),
+            'migrate:rollback' => new MigrateRollbackCommand(),
+            'make:migration' => new MakeMigrationCommand(),
         ];
 
     }
@@ -25,12 +28,10 @@ class Application
 
         $command = $this->commands[$commandName];
 
-        // pass args (argv[2] and onward)
-        $command->setArguments(array_slice($argv, 2));
-
-        $command->handle();
-
-        $this->commands[$commandName]->handle();
+        $args = array_slice($argv, 2);
+        
+        // all commands acept handle(array $args = [])
+        $command->handle($args);
     }
 
     public function displayAvailableCommands(): void
