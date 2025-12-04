@@ -15,6 +15,15 @@ class Application
 
     protected array $instances = [];
 
+    public function debugBindings(): array
+    {
+        return [
+            'bindings' => array_keys($this->bindings),
+            'singletons' => array_keys($this->singletons),
+            'instances' => array_keys($this->instances),
+        ];
+    }
+
     public function bind(string $abstract, \Closure|string $concrete): void
     {
         $this->bindings[$abstract] = [

@@ -7,9 +7,11 @@ use Framework\Database\Connection;
 use Framework\Http\Kernel;
 use Framework\Routing\Router;
 use Framework\Database\Model as BaseModel;
+use Framework\View\View;
 
 $app = new Application();
 
+View::setBasePath(__DIR__.'/../resources/views');
 // DB Connection (SQLite example)
 $app->singleton(Connection::class, function() {
     // db file in project root // adjust as needed

@@ -37,7 +37,7 @@ class Kernel
         } catch (\Throwable $e) {
             // in debug mode, show pretty error page
             if (getenv('APP_DEBUG') === 'true') {
-                $html = ErrorPageRenderer::render($e);
+                $html = ErrorPageRenderer::render($e, $request, $this->app);
                 return new Response($html, 500);
             }
 

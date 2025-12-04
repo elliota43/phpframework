@@ -4,17 +4,21 @@ declare(strict_types=1);
 
 namespace Framework\Exceptions;
 
+use Framework\Application;
 use Framework\Http\Request;
 use Throwable;
 
 class ErrorPageRenderer
 {
-    public static function render(Throwable $e, ?Request $request = null): string
+    public static function render(Throwable $e, ?Request $request = null, ?Application $app = null): string
     {
         $title   = htmlspecialchars(get_class($e), ENT_QUOTES, 'UTF-8');
         $message = htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
         $file    = htmlspecialchars($e->getFile(), ENT_QUOTES, 'UTF-8');
         $line    = $e->getLine();
+
+        $containerHtml = self::renderContainerBindings($app);
+        $sharePlaceholder = '{{__MINI_DEBUG_SHARE_URL__}}';
 
         $traceHtml   = self::renderTrace($e);
         $codeHtml    = self::renderCodeExcerpt($e->getFile(), $e->getLine());
@@ -291,9 +295,14 @@ class ErrorPageRenderer
             <div class="section-heading">Request Context</div>
             {$requestHtml}
         </div>
+
+        <div class="panel-section">
+            <div class="section-heading">Container / IoC Bindings</div>
+            {$containerHtml}
+        </div>
     </div>
     <footer>
-        mini framework — debug mode
+        mini framework — debug mode  • share: {$sharePlaceholder}
     </footer>
 </div>
 
@@ -314,6 +323,11 @@ class ErrorPageRenderer
 </body>
 </html>
 HTML;
+
+        $shareUrl = self::maybeSaveDebugSnapshot($html);
+        $html = str_replace($sharePlaceholder, htmlspecialchars($shareUrl, ENT_QUOTES, 'UTF-8'), $html);
+
+        return $html;
     }
 
     protected static function renderTrace(Throwable $e): string
@@ -427,6 +441,74 @@ HTML;
         return implode("\n", $htmlLines);
     }
 
+    protected static function renderContainerBindings(?Application $app = null): string
+    {
+        if (!$app) {
+            return '<div class="request-block"></div>(container not available)</div></div>';
+        }
+
+        $data = $app->debugBindings();
+
+        $bindings = $data['bindings'] ?? [];
+        $singletons = $data['singletons'] ?? [];
+        $instances = $data['instances'] ?? [];
+
+        $bindingsJson = htmlspecialchars(json_encode($bindings, JSON_PRETTY_PRINT), ENT_QUOTES);
+        $singletonsJson = htmlspecialchars(json_encode($singletons, JSON_PRETTY_PRINT), ENT_QUOTES, 'UTF-8');
+        $instancesJson = htmlspecialchars(json_encode($instances, JSON_PRETTY_PRINT), ENT_QUOTES, 'UTF-8');
+        return <<<HTML
+<div class="request-block">
+    <div>
+        <div class="kv-box">
+            <div class="kv-box-title">Bindings</div>
+            <pre>{$bindingsJson}</pre>
+        </div>
+    </div>
+    <div>
+        <div class="kv-box">
+            <div class="kv-box-title">Singletons</div>
+            <pre>{$singletonsJson}</pre>
+        </div>
+    </div>
+</div>
+<div class="request-block">
+    <div>
+        <div class="kv-box">
+            <div class="kv-box-title">Instances</div>
+            <pre>{$instancesJson}</pre>
+        </div>
+    </div>
+    <div></div>
+</div>
+HTML;
+
+    }
+
+    protected static function maybeSaveDebugSnapshot(string $html): string
+    {
+        // only in debug mode; if for some reason APP_DEBUG isn't set, just skip
+        if (getenv('APP_DEBUG') !== 'true') {
+            return '#';
+        }
+
+        $cwd = getcwd() ?: __DIR__ .'/../../..';
+        $publicDir = $cwd . '/public';
+        $debugDir = $publicDir .'/debug';
+
+        if (!is_dir($debugDir)) {
+            @mkdir($debugDir, 0777, true);
+        }
+
+        $id = date('Ymd_His') . '_' . substr(sha1(uniqid('', true)), 0, 8);
+        $fileName = $id . '.html';
+        $path = $debugDir . '/' . $fileName;
+
+        // Best-effort write; if it fails, we still render the main page
+        @file_put_contents($path, $html);
+
+        // Relative URL the dev can copy (your built-in server will serve /public)
+        return '/debug/'.$fileName;
+    }
     protected static function renderRequestContext(?Request $request = null): string
     {
         // Basic info

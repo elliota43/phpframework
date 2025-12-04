@@ -41,6 +41,7 @@ return function (Router $router): void {
         return new Response("<pre>" . $out . "</pre>");
     });
 
+    $router->get('/', [HomeController::class, 'index']);;
 
     $router->get('/debug-users', function() {
         $users = User::all();
