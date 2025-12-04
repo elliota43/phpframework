@@ -7,6 +7,7 @@ namespace Framework\Routing;
 use Framework\Http\Request;
 use Framework\Http\Response;
 use Framework\Application;
+use Framework\Database\Model;
 use ReflectionFunction;
 use ReflectionMethod;
 
@@ -197,6 +198,31 @@ class Router
             // 1) Class type-hint -> resolve via container
             if ($type && !$type->isBuiltin()) {
                 $className = $type->getName();
+
+                // 1a) Route model binding:
+                // if the parameter type is a subclass of our base Model AND
+                // there is a route param with the same name
+                // hydrate the model from the route value
+                if (is_subclass_of($className, Model::class) && array_key_exists($name, $routeParams)) {
+                    $key = $routeParams[$name];
+
+                    /**
+                     * @var Model|null Model
+                     */
+                    $model = $className::find($key);
+
+                    if ($model === null) {
+                        // for now: hard fail; later you can map this to a 404
+                        throw new \RuntimeException(
+                            "Route model binding failed for {$className} with key '{$key}' (param \${name})"
+                        );
+                    }
+
+                    $resolvedArgs[] = $model;
+                    continue;
+                }
+
+                // 1b) otherwise, resolve via container
                 $resolvedArgs[] = $this->app->make($className);
                 continue;
             }
