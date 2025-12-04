@@ -34,15 +34,9 @@ class Kernel
             );
             return $pipeline($request);
         } catch (\Throwable $e) {
-            // simple version: show a generic 500
-            $body = 'Internal service error';
+            $handler = $this->app->make(\Framework\Exceptions\ErrorHandler::class);
 
-            // in dev, dump message/trace
-            if (getenv('APP_DEBUG') == 'true') {
-                $body .= "\n\n" . $e->getMessage();
-            }
-
-            return new Response($body, 500);
+            return $handler->handle($e);
         }
     }
 }

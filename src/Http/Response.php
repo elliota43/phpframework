@@ -38,4 +38,9 @@ class Response
     {
         return new self($content, $status, $headers);
     }
+
+    public function getStatusCode(): int
+    {
+        return $this->status;
+    }
 }

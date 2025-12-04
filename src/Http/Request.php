@@ -52,4 +52,6 @@ class Request
 
         return $path ?: '/';
     }
+
+   
 }

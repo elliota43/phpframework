@@ -30,6 +30,9 @@ $app->bind(Kernel::class, function(Application $app) {
     );
 });
 
+$app->singleton(\Framework\Exceptions\ErrorHandler::class, function () {
+    return new \Framework\Exceptions\ErrorHandler();
+});
 // later, bind config, views, db, etc.
 
 return $app;

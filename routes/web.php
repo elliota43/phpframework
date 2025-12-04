@@ -13,4 +13,9 @@ return function (Router $router): void {
     $router->get('/posts/{id}', function (Request $request, string $id) {
         return new Response("Post ID: {$id}");
     });
+
+    $router->get('/inject/{name}', function (Request $request, string $name): Response {
+        $method = $request->getMethod(); // should be "GET"
+        return new Response("Hello {$name}, via {$method} (closure)");
+    });
 };

@@ -13,6 +13,8 @@ $app = require __DIR__ .'/../bootstrap/app.php';
 // Build Request from PHP Globals
 $request = Request::fromGlobals();
 
+$app->instance(Request::class, $request);
+
 // Receive the HTTP kernel from the app/container
 /** @var Kernel $kernel */
 $kernel = $app->make(Kernel::class);
