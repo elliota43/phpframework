@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>mini PHP Framework • Documentation</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <style>
+        * { box-sizing: border-box; }
+
+        :root {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color-scheme: dark;
+            --bg: #020617;
+            --bg-alt: #020617;
+            --bg-elevated: #020617;
+            --border-soft: #1e293b;
+            --accent: #3b82f6;
+            --accent-soft: rgba(59,130,246,0.15);
+            --accent-alt: #22c55e;
+            --text: #e5e7eb;
+            --text-soft: #9ca3af;
+            --code-bg: #020617;
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(circle at top, #020617 0, #020617 40%, #020617 100%);
+            color: var(--text);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 260px minmax(0, 1fr);
+            min-height: 100vh;
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                position: static;
+                border-right: none;
+                border-bottom: 1px solid var(--border-soft);
+            }
+        }
+
+        .sidebar {
+            border-right: 1px solid var(--border-soft);
+            background: #020617;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            padding: 18px 18px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-logo {
+            width: 24px;
+            height: 24px;
+            border-radius: 8px;
+            background: radial-gradient(circle at 30% 0, #38bdf8, #3b82f6 40%, #6366f1 75%, #0f172a 100%);
+            box-shadow: 0 0 14px rgba(59,130,246,0.7);
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-text span:first-child {
+            font-size: 14px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--text-soft);
+        }
+
+        .brand-text span:last-child {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .sidebar-section-title {
+            margin: 6px 0 4px;
+            font-size: 11px;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            color: var(--text-soft);
+        }
+
+        .nav-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            font-size: 14px;
+        }
+
+        .nav-list li {
+            margin: 2px 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 6px;
+            padding: 4px 8px;
+            color: var(--text-soft);
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .nav-link:hover {
+            background: rgba(15,23,42,0.9);
+            border-color: var(--border-soft);
+            color: var(--text);
+        }
+
+        .nav-link.active {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+            color: var(--text);
+        }
+
+        .nav-link span.bullet {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: var(--border-soft);
+        }
+
+        .nav-link.active span.bullet {
+            background: var(--accent);
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            font-size: 11px;
+            color: var(--text-soft);
+        }
+
+        .sidebar-footer code {
+            background: rgba(15,23,42,0.9);
+            padding: 1px 4px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .content {
+            padding: 24px 36px 48px;
+            max-width: 920px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 900px) {
+            .content {
+                padding: 18px 16px 36px;
+            }
+        }
+
+        .doc-section {
+            margin-bottom: 40px;
+        }
+
+        .doc-section h1 {
+            font-size: 28px;
+            margin: 0 0 10px;
+        }
+
+        .doc-section h2 {
+            font-size: 22px;
+            margin: 28px 0 8px;
+        }
+
+        .doc-section h3 {
+            font-size: 17px;
+            margin: 18px 0 6px;
+        }
+
+        .doc-section p {
+            margin: 6px 0 10px;
+            color: var(--text-soft);
+        }
+
+        .doc-section ul {
+            padding-left: 20px;
+            margin: 4px 0 12px;
+            color: var(--text-soft);
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 2px 8px 3px;
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            background: rgba(148,163,184,0.2);
+            color: var(--text-soft);
+        }
+
+        .pill span.dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: var(--accent);
+        }
+
+        .code-block {
+            margin: 8px 0 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-soft);
+            background: var(--code-bg);
+            padding: 10px 12px;
+            overflow-x: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 13px;
+        }
+
+        .code-block pre {
+            margin: 0;
+            white-space: pre;
+        }
+
+        code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 12px;
+            background: rgba(15,23,42,0.9);
+            padding: 1px 4px;
+            border-radius: 4px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        @media (min-width: 780px) {
+            .grid-2 {
+                grid-template-columns: repeat(2, minmax(0,1fr));
+            }
+        }
+
+        .card {
+            border-radius: 10px;
+            border: 1px solid var(--border-soft);
+            background: radial-gradient(circle at top left, rgba(51,65,85,0.35), #020617 55%);
+            padding: 12px 14px 14px;
+        }
+
+        .card h3 {
+            margin-top: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 1px 7px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            background: rgba(34,197,94,0.15);
+            color: #86efac;
+        }
+
+        .badge.warn {
+            background: rgba(248,113,113,0.12);
+            color: #fecaca;
+        }
+
+        .badge.cli {
+            background: rgba(59,130,246,0.18);
+            color: #bfdbfe;
+        }
+
+        .inline-heading {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        a.inline-link {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        a.inline-link:hover {
+            text-decoration: underline;
+        }
+
+        .divider {
+            height: 1px;
+            border-bottom: 1px dashed var(--border-soft);
+            margin: 16px 0;
+        }
+    </style>
+    <!-- Highlight.js dark theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-logo"></div>
+            <div class="brand-text">
+                <span>PHP MICRO</span>
+                <span>mini framework</span>
+            </div>
+        </div>
+
+        <div>
+            <div class="sidebar-section-title">Overview</div>
+            <ul class="nav-list">
+                <li><a class="nav-link active" data-target="intro"><span class="bullet"></span>Introduction</a></li>
+                <li><a class="nav-link" data-target="getting-started"><span class="bullet"></span>Getting Started</a></li>
+                <li><a class="nav-link" data-target="structure"><span class="bullet"></span>Directory Structure</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <div class="sidebar-section-title">Core</div>
+            <ul class="nav-list">
+                <li><a class="nav-link" data-target="container"><span class="bullet"></span>Service Container</a></li>
+                <li><a class="nav-link" data-target="http"><span class="bullet"></span>HTTP Kernel &amp; Middleware</a></li>
+                <li><a class="nav-link" data-target="routing"><span class="bullet"></span>Routing &amp; Controllers</a></li>
+                <li><a class="nav-link" data-target="views"><span class="bullet"></span>Views &amp; Templates</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <div class="sidebar-section-title">Data Layer</div>
+            <ul class="nav-list">
+                <li><a class="nav-link" data-target="models"><span class="bullet"></span>Models &amp; ActiveRecord</a></li>
+                <li><a class="nav-link" data-target="builder"><span class="bullet"></span>Query Builder &amp; Collections</a></li>
+                <li><a class="nav-link" data-target="migrations"><span class="bullet"></span>Migrations &amp; CLI</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <div class="sidebar-section-title">Developer Experience</div>
+            <ul class="nav-list">
+                <li><a class="nav-link" data-target="errors"><span class="bullet"></span>Error Pages &amp; Debug</a></li>
+                <li><a class="nav-link" data-target="roadmap"><span class="bullet"></span>Next Steps</a></li>
+            </ul>
+        </div>
+
+        <div class="sidebar-footer">
+            Run dev server:<br>
+            <code>php mini serve</code>
+        </div>
+    </aside>
+
+    <main class="content">
+        <!-- INTRO -->
+        <section class="doc-section" id="intro">
+            <div class="pill"><span class="dot"></span> mini PHP framework</div>
+            <h1>Introduction</h1>
+            <p>
+                <strong>mini</strong> is a small, Laravel-inspired PHP framework built to learn how modern frameworks
+                actually work under the hood: a service container, HTTP kernel with middleware pipeline, routing and
+                controller resolution via reflection, a simple ActiveRecord ORM, query builder, and a tiny Blade-style
+                templating engine.
+            </p>
+            <p>
+                The goal is not to compete with full-stack frameworks, but to give you a clean, hackable codebase you
+                completely understand.
+            </p>
+
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3>Philosophy</h3>
+                    <ul>
+                        <li>Small, readable code over magical behavior.</li>
+                        <li>Feature set mirrors “early Eloquent / early Laravel”.</li>
+                        <li>Every subsystem is something you can open and modify.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Major Pieces</h3>
+                    <ul>
+                        <li>Application container &amp; automatic dependency injection.</li>
+                        <li>Router with parameter binding &amp; implicit route model binding.</li>
+                        <li>View engine with <code>{{ }}</code>, <code>@if</code>, <code>@foreach</code> syntax.</li>
+                        <li>Models, relationships, query builder &amp; collections.</li>
+                        <li>SQLite migrations via a small console tool (<code>php mini ...</code>).</li>
+                        <li>Dark-mode debug error page with stack trace &amp; request context.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- GETTING STARTED -->
+        <section class="doc-section" id="getting-started">
+            <h2>Getting Started</h2>
+            <p>
+                mini assumes a basic PHP 8+ environment with SQLite available. From your project root:
+            </p>
+
+            <div class="code-block"><pre>$ php mini serve
+PHP built-in server started at http://127.0.0.1:9003</pre></div>
+
+            <p>
+                The front controller <code>public/index.php</code> boots the application:
+            </p>
+
+            <div class="code-block"><pre>// public/index.php
+
+require __DIR__.'/../vendor/autoload.php';     // optional
+$app = require __DIR__.'/../bootstrap/app.php';
+
+$kernel  = $app->make(\Framework\Http\Kernel::class);
+$request = \Framework\Http\Request::capture();
+
+$response = $kernel->handle($request);
+$response->send();</pre></div>
+
+            <p>
+                Routes live in <code>routes/web.php</code> and are registered in <code>bootstrap/app.php</code>.
+            </p>
+
+            <div class="code-block"><pre>// routes/web.php
+
+use Framework\Routing\Router;
+use Framework\View\View;
+
+return function (Router $router): void {
+    $router->get('/', function () {
+        return View::make('home', ['name' =&gt; 'Elliot Anderson']);
+    });
+};</pre></div>
+        </section>
+
+        <!-- STRUCTURE -->
+        <section class="doc-section" id="structure">
+            <h2>Directory Structure</h2>
+            <p>A typical application using mini looks like:</p>
+
+            <div class="code-block"><pre>.
+├── app
+│   ├── Http
+│   │   ├── Controllers
+│   │   └── Middleware
+│   ├── Models
+│   └── helpers.php
+├── bootstrap
+│   └── app.php
+├── public
+│   ├── index.php
+│   └── debug/              # saved debug html snapshots
+├── resources
+│   └── views               # Blade-ish templates
+├── routes
+│   └── web.php
+├── src
+│   ├── Application.php     # container
+│   ├── Console             # mini CLI: serve, migrate, ...
+│   ├── Database            # Connection, Model, Builder, Migration
+│   ├── Exceptions          # ErrorPageRenderer
+│   ├── Http                # Request, Response, Kernel
+│   ├── Routing             # Router
+│   ├── Support             # Collection
+│   └── View                # View, TemplateEngine
+└── storage
+    └── views               # compiled templates</pre></div>
+        </section>
+
+        <!-- CONTAINER -->
+        <section class="doc-section" id="container">
+            <h2>Service Container &amp; Bootstrapping</h2>
+            <p>
+                The <code>Framework\Application</code> class is a lightweight IoC container. It is responsible for:
+            </p>
+            <ul>
+                <li>Registering bindings and singletons.</li>
+                <li>Resolving classes (including constructor injection via reflection).</li>
+                <li>Providing debug info about registered services.</li>
+            </ul>
+
+            <div class="code-block"><pre>// bootstrap/app.php
+
+use Framework\Application;
+use Framework\Database\Connection;
+use Framework\Database\Model as BaseModel;
+use Framework\View\View;
+
+$app = new Application();
+
+// DB connection
+$app-&gt;singleton(Connection::class, function () {
+    $dsn = 'sqlite:' . __DIR__ . '/../database.sqlite';
+    return new Connection($dsn);
+});
+
+// Attach PDO to base Model
+BaseModel::setConnection($app-&gt;make(Connection::class));
+
+// Configure view paths
+View::setBasePath(__DIR__ . '/../resources/views');
+View::setCachePath(__DIR__ . '/../storage/views');
+
+// Register HTTP kernel & router
+$app-&gt;singleton(\Framework\Routing\Router::class, fn () =&gt; new \Framework\Routing\Router($app));
+$app-&gt;singleton(\Framework\Http\Kernel::class, fn () =&gt;
+    new \Framework\Http\Kernel($app, $app-&gt;make(\Framework\Routing\Router::class))
+);
+
+return $app;</pre></div>
+        </section>
+
+        <!-- HTTP -->
+        <section class="doc-section" id="http">
+            <h2>HTTP Kernel &amp; Middleware</h2>
+            <p>
+                The HTTP layer consists of:
+            </p>
+            <ul>
+                <li><code>Framework\Http\Request</code> – an immutable request object.</li>
+                <li><code>Framework\Http\Response</code> – simple response wrapper.</li>
+                <li><code>Framework\Http\Kernel</code> – builds a middleware pipeline and delegates to the router.</li>
+            </ul>
+
+            <div class="code-block"><pre>// Kernel::handle()
+
+public function handle(Request $request): Response
+{
+    try {
+        $pipeline = $this-&gt;buildMiddlewarePipeline();
+        return $pipeline($request);
+    } catch (\Throwable $e) {
+        if (getenv('APP_DEBUG') === 'true') {
+            $html = ErrorPageRenderer::render($e, $request, $this-&gt;app);
+            return new Response($html, 500);
+        }
+        return new Response('Internal Server Error', 500);
+    }
+}</pre></div>
+
+            <p>
+                Middleware are simple classes with a <code>handle(Request $request, Closure $next)</code> method.
+            </p>
+
+            <div class="code-block"><pre>// app/Http/Middleware/LogRequests.php
+
+class LogRequests
+{
+    public function handle(Request $request, \Closure $next): Response
+    {
+        $response = $next($request);
+
+        error_log(sprintf(
+            '%s %s -&gt; %d',
+            $request-&gt;getMethod(),
+            $request-&gt;getPath(),
+            $response-&gt;getStatusCode()
+        ));
+
+        return $response;
+    }
+}</pre></div>
+        </section>
+
+        <!-- ROUTING -->
+        <section class="doc-section" id="routing">
+            <h2>Routing &amp; Controllers</h2>
+
+            <h3>Basic Routes</h3>
+            <div class="code-block"><pre>// routes/web.php
+
+return function (Router $router): void {
+    $router-&gt;get('/', function () {
+        return View::make('home');
+    });
+
+    $router-&gt;get('/hello/{name}', function (string $name) {
+        return new Response("Hello, {$name}");
+    });
+};</pre></div>
+
+            <h3>Controller Actions</h3>
+            <p>Routes can point to controllers using <code>&quot;Controller@method&quot;</code> or array syntax:</p>
+
+            <div class="code-block"><pre>$router-&gt;get('/dashboard', 'HomeController@index');
+
+// or
+
+$router-&gt;get('/dashboard', [\App\Http\Controllers\HomeController::class, 'index']);</pre></div>
+
+            <p>
+                The router uses reflection to resolve the controller from the container and inject method dependencies:
+            </p>
+
+            <div class="code-block"><pre>class HomeController
+{
+    public function index(\Framework\Http\Request $request): Response
+    {
+        // Request is injected automatically
+    }
+}</pre></div>
+
+            <h3>Route Parameters &amp; Implicit Model Binding</h3>
+            <p>
+                Named parameters in routes are converted into regexes and collected into <code>$routeParams</code>. These are used
+                both as raw values and for <strong>implicit route model binding</strong>.
+            </p>
+
+            <div class="code-block"><pre>$router-&gt;get('/users/{user}', 'UserController@show');
+
+// In UserController
+
+public function show(\App\Models\User $user): Response
+{
+    // The {user} parameter is resolved into a User model:
+    // SELECT * FROM users WHERE id = :id LIMIT 1
+    return View::make('users.show', compact('user'));
+}</pre></div>
+
+            <p>
+                Under the hood, <code>callWithDependencies()</code> checks if a parameter type is a subclass of
+                <code>Framework\Database\Model</code> and the parameter name matches a route parameter; if so, it calls
+                <code>User::find($id)</code> and injects the model.
+            </p>
+        </section>
+
+        <!-- VIEWS -->
+        <section class="doc-section" id="views">
+            <h2>Views &amp; Templating</h2>
+            <p>
+                Views live in <code>resources/views</code> and are compiled to PHP into <code>storage/views</code> by
+                <code>Framework\View\TemplateEngine</code>. The <code>View</code> facade compiles and returns a
+                <code>Response</code>.
+            </p>
+
+            <div class="code-block"><pre>// bootstrap/app.php
+
+View::setBasePath(__DIR__ . '/../resources/views');
+View::setCachePath(__DIR__ . '/../storage/views');</pre></div>
+
+            <h3>Template Syntax</h3>
+            <ul>
+                <li><code>{{ $var }}</code> – escaped echo (<code>htmlspecialchars</code>).</li>
+                <li><code>{!! $html !!}</code> – raw echo.</li>
+                <li><code>@if</code>, <code>@elseif</code>, <code>@else</code>, <code>@endif</code>.</li>
+                <li><code>@foreach</code>, <code>@endforeach</code>.</li>
+            </ul>
+
+            <div class="code-block"><pre>&lt;!-- resources/views/home.php --&gt;
+
+&lt;!doctype html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+    &lt;title&gt;Mini • Home&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Welcome, {{ $user-&gt;name }}&lt;/h1&gt;
+
+    @if ($user-&gt;posts-&gt;isEmpty())
+        &lt;p&gt;No posts yet.&lt;/p&gt;
+    @else
+        &lt;ul&gt;
+            @foreach ($user-&gt;posts as $post)
+                &lt;li&gt;{{ $post-&gt;title }}&lt;/li&gt;
+            @endforeach
+        &lt;/ul&gt;
+    @endif
+&lt;/body&gt;
+&lt;/html&gt;</pre></div>
+
+            <p>
+                The first time a view is requested, it is compiled and cached; subsequent requests use the cached file
+                until the source template timestamp changes.
+            </p>
+        </section>
+
+        <!-- MODELS -->
+        <section class="doc-section" id="models">
+            <h2>Models &amp; ActiveRecord</h2>
+            <p>
+                Models extend <code>Framework\Database\Model</code> and map to database tables. The base model provides:
+            </p>
+            <ul>
+                <li>Static connection via <code>Model::setConnection()</code>.</li>
+                <li>ActiveRecord operations: <code>save()</code>, <code>delete()</code>, <code>all()</code>, <code>find()</code>.</li>
+                <li>Magic attributes via <code>__get</code>/<code>__set</code> and accessor/mutator methods.</li>
+                <li>Naive timestamps (<code>created_at</code>, <code>updated_at</code>).</li>
+                <li>Relationship helpers: <code>hasMany</code>, <code>belongsTo</code>.</li>
+            </ul>
+
+            <div class="code-block"><pre>// app/Models/User.php
+
+namespace App\Models;
+
+use Framework\Database\Model;
+
+class User extends Model
+{
+    protected static string $table = 'users';
+
+    public function posts()
+    {
+        return $this-&gt;hasMany(Post::class, 'user_id');
+    }
+
+    // Accessor example:
+    public function getDisplayNameAttribute(): string
+    {
+        return $this-&gt;name . ' &lt;' . $this-&gt;email . '&gt;';
+    }
+
+    // Mutator example:
+    public function setEmailAttribute(string $value): void
+    {
+        $this-&gt;attributes['email'] = strtolower($value);
+    }
+}</pre></div>
+
+            <h3>Creating &amp; Updating</h3>
+            <div class="code-block"><pre>// create
+$user = new User([
+    'name'  =&gt; 'Elliot Anderson',
+    'email' =&gt; 'elliot@example.com',
+]);
+
+$user-&gt;save();        // INSERT, sets $user-&gt;id
+
+// update
+$user-&gt;name = 'New Name';
+$user-&gt;save();        // UPDATE users SET ... WHERE id = :id</pre></div>
+
+            <p>Attributes are available directly as properties thanks to magic attribute handling and relationship resolution:</p>
+
+            <div class="code-block"><pre>$user = User::find(1);
+
+echo $user-&gt;display_name;   // calls getDisplayNameAttribute()
+echo $user-&gt;posts-&gt;count(); // posts() relationship, wrapped in a Collection</pre></div>
+        </section>
+
+        <!-- BUILDER & COLLECTION -->
+        <section class="doc-section" id="builder">
+            <h2>Query Builder &amp; Collection</h2>
+            <p>
+                The <code>Framework\Database\Builder</code> class provides a small fluent query builder for SELECT
+                queries. Results are wrapped in <code>Framework\Support\Collection</code>, an iterable helper with
+                <code>map</code>, <code>filter</code>, <code>first</code>, <code>pluck</code>, and more.
+            </p>
+
+            <div class="code-block"><pre>// Fluent builder usage
+
+$users = User::query()
+    -&gt;where('age', '&gt;', 18)
+    -&gt;where('status', 'active')
+    -&gt;orderBy('name')
+    -&gt;limit(10)
+    -&gt;get();           // returns Collection&lt;User&gt;
+
+$names = $users
+    -&gt;map(fn (User $u) =&gt; $u-&gt;name)
+    -&gt;all();</pre></div>
+
+            <p>
+                Models provide shortcuts that delegate to the builder:
+            </p>
+
+            <div class="code-block"><pre>User::all();                        // Collection&lt;User&gt;
+User::find(1);                      // ?User
+User::where('status', 'active');    // Collection&lt;User&gt;</pre></div>
+
+            <div class="card">
+                <span class="badge">note</span>
+                <p style="margin-top:6px;">
+                    The builder currently targets SQLite and focuses on SELECT queries. It is intentionally minimal so
+                    you can read and extend it as needed (joins, aggregates, pagination, etc.).
+                </p>
+            </div>
+        </section>
+
+        <!-- MIGRATIONS & CLI -->
+        <section class="doc-section" id="migrations">
+            <h2>Migrations &amp; Console Commands</h2>
+            <p>
+                mini ships with a small console kernel that powers the <code>php mini</code> CLI. Commands are
+                registered in <code>Framework\Console\Application</code>.
+            </p>
+
+            <div class="code-block"><pre>$ php mini
+Available commands:
+  serve
+  make:controller
+  make:migration
+  migrate
+  migrate:rollback</pre></div>
+
+            <h3>Creating &amp; Running Migrations</h3>
+
+            <div class="code-block"><pre>// generate a migration class under database/migrations
+$ php mini make:migration create_users_table</pre></div>
+
+            <p>
+                The generated file returns an anonymous class extending <code>Framework\Database\Migration</code> with
+                <code>up()</code> and <code>down()</code> methods. Inside, use the underlying PDO connection directly:
+            </p>
+
+            <div class="code-block"><pre>// database/migrations/20241204120000_create_users_table.php
+
+use Framework\Database\Migration;
+use Framework\Database\Connection;
+
+return new class extends Migration {
+    public function up(Connection $connection): void
+    {
+        $connection-&gt;pdo()-&gt;exec(<<<SQL
+CREATE TABLE users (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT NOT NULL,
+    email       TEXT NOT NULL,
+    created_at  TEXT,
+    updated_at  TEXT
+);
+SQL);
+    }
+
+    public function down(Connection $connection): void
+    {
+        $connection-&gt;pdo()-&gt;exec('DROP TABLE IF EXISTS users;');
+    }
+};</pre></div>
+
+            <div class="code-block"><pre>// run outstanding migrations
+$ php mini migrate
+
+// rollback most recent batch
+$ php mini migrate:rollback</pre></div>
+        </section>
+
+        <!-- ERRORS -->
+        <section class="doc-section" id="errors">
+            <h2>Error Pages &amp; Debug Experience</h2>
+            <p>
+                In debug mode (<code>APP_DEBUG=true</code>), unhandled exceptions are rendered using
+                <code>Framework\Exceptions\ErrorPageRenderer</code> – a Whoops-style dark error page that shows:
+            </p>
+            <ul>
+                <li>Exception class, message, file and line.</li>
+                <li>Code excerpt with the failing line highlighted.</li>
+                <li>Stack trace with “App” vs “Framework” frames and a toggle.</li>
+                <li>Request context: method, URI, client IP and superglobals (GET, POST, cookies, headers).</li>
+                <li>Container bindings: registered bindings, singletons and instances.</li>
+                <li>A saved HTML snapshot link under <code>public/debug/&lt;id&gt;.html</code>.</li>
+            </ul>
+
+            <div class="code-block"><pre>// public/index.php
+
+putenv('APP_DEBUG=true');      // for development
+
+// Kernel::handle() already wraps exceptions and delegates to ErrorPageRenderer</pre></div>
+
+            <div class="card">
+                <span class="badge warn">production</span>
+                <p style="margin-top:6px;">
+                    In production, set <code>APP_DEBUG=false</code>. The kernel will return a generic
+                    <code>500 Internal Server Error</code> response without exposing stack traces or request data.
+                </p>
+            </div>
+        </section>
+
+        <!-- ROADMAP -->
+        <section class="doc-section" id="roadmap">
+            <h2>Next Steps &amp; Ideas</h2>
+            <p>
+                mini is intentionally incomplete so you can grow it as you learn. Natural next features include:
+            </p>
+            <ul>
+                <li>View layouts and sections (<code>@extends</code>, <code>@section</code>, <code>@yield</code>).</li>
+                <li>Soft deletes and global scopes on models.</li>
+                <li>More query builder features (joins, aggregates, pagination helpers).</li>
+                <li>HTTP testing helpers and an in-memory test kernel.</li>
+                <li>Configuration system (env files, config repository).</li>
+                <li>Routing groups, middleware per route, named routes and URL generation.</li>
+            </ul>
+
+            <div class="divider"></div>
+
+            <p>
+                The real power of this framework is that you own every line. Treat this documentation as a jumping-off
+                point: open the classes mentioned here, trace through the flow, and don’t be afraid to break things and
+                rebuild them.
+            </p>
+        </section>
+    </main>
+</div>
+
+<script>
+    // Navigation: smooth-scroll on click + scrollspy via IntersectionObserver
+    (function () {
+        const links = Array.from(document.querySelectorAll('.nav-link'));
+        const sections = new Map();
+
+        links.forEach(link => {
+            const id = link.getAttribute('data-target');
+            const section = document.getElementById(id);
+            if (section) {
+                sections.set(id, section);
+            }
+
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('data-target');
+                const targetSection = sections.get(targetId);
+                if (!targetSection) return;
+
+                // smooth scroll
+                window.scrollTo({
+                    top: Math.max(0, targetSection.offsetTop - 16),
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // IntersectionObserver to update active nav-link while scrolling
+        const observerOptions = {
+            root: null,
+            rootMargin: '-30% 0px -50% 0px', // consider section active when roughly in middle of viewport
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            // Find the entry that is intersecting and has the largest intersectionRatio
+            const visible = entries.filter(e => e.isIntersecting).sort((a,b) => b.intersectionRatio - a.intersectionRatio);
+            const activeId = visible[0]?.target?.id;
+
+            links.forEach(l => {
+                l.classList.toggle('active', l.getAttribute('data-target') === activeId);
+            });
+        }, observerOptions);
+
+        // Observe all registered sections
+        sections.forEach((section) => observer.observe(section));
+    })();
+</script>
+
+<!-- Highlight.js (syntax highlighting) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script>
+    // Wrap <pre> contents in <code> for highlight.js, then highlight
+    (function () {
+        const blocks = document.querySelectorAll('.code-block > pre');
+
+        blocks.forEach(pre => {
+            // If already has a <code> child, skip
+            if (pre.querySelector('code')) return;
+
+            const code = document.createElement('code');
+            // preserve innerHTML (content is already escaped in the docs)
+            code.innerHTML = pre.innerHTML;
+            pre.innerHTML = '';
+            pre.appendChild(code);
+        });
+
+        // Initialize highlight.js on all blocks
+        if (window.hljs) {
+            document.querySelectorAll('.code-block pre code').forEach((el) => {
+                try { hljs.highlightElement(el); } catch (e) { /* ignore */ }
+            });
+        }
+    })();
+</script>
+</body>
+</html>
