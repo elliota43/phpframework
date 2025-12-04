@@ -23,24 +23,24 @@ class Router
         protected Application $app
     ) {}
 
-    public function get(string $uri, mixed $action): void
+    public function get(string $uri, mixed $action): RouteDefinition
     {
-        $this->addRoute('GET', $uri, $action);
+        return $this->addRoute('GET', $uri, $action);
     }
 
-    public function post(string $uri, mixed $action): void
+    public function post(string $uri, mixed $action): RouteDefinition
     {
-        $this->addRoute('POST', $uri, $action);
+        return $this->addRoute('POST', $uri, $action);
     }
 
-    public function put(string $uri, mixed $action): void
+    public function put(string $uri, mixed $action): RouteDefinition
     {
-        $this->addRoute('PUT', $uri, $action);
+        return $this->addRoute('PUT', $uri, $action);
     }
 
-    public function delete(string $uri, mixed $action): void
+    public function delete(string $uri, mixed $action): RouteDefinition
     {
-        $this->addRoute('DELETE', $uri, $action);
+        return $this->addRoute('DELETE', $uri, $action);
     }
     
     public function setRouteName(string $name, string $method, string $uri): void

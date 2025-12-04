@@ -9,7 +9,9 @@ class Application
     {
         $this->commands = [
             'serve' => new ServeCommand(),
+            'make:controller' => new MakeControllerCommand()
         ];
+
     }
 
     public function run(array $argv): void
@@ -20,6 +22,13 @@ class Application
             $this->displayAvailableCommands();
             return;
         }
+
+        $command = $this->commands[$commandName];
+
+        // pass args (argv[2] and onward)
+        $command->setArguments(array_slice($argv, 2));
+
+        $command->handle();
 
         $this->commands[$commandName]->handle();
     }
