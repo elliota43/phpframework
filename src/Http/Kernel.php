@@ -6,6 +6,7 @@ use Framework\Routing\Router;
 use Framework\Application;
 use Framework\Http\Request;
 use Framework\Http\Response;
+use Framework\Exceptions\ErrorPageRenderer;
 class Kernel 
 {
     public function __construct(protected Application $app, protected Router $router)
@@ -34,9 +35,14 @@ class Kernel
             );
             return $pipeline($request);
         } catch (\Throwable $e) {
-            $handler = $this->app->make(\Framework\Exceptions\ErrorHandler::class);
+            // in debug mode, show pretty error page
+            if (getenv('APP_DEBUG') === 'true') {
+                $html = ErrorPageRenderer::render($e);
+                return new Response($html, 500);
+            }
 
-            return $handler->handle($e);
+            // production safe message
+            return new Response('Internal Server Error', 500);
         }
     }
 }

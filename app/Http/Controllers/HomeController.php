@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Framework\Http\Request;
 use Framework\Http\Response;
 
@@ -11,6 +12,7 @@ class HomeController extends Controller
     {
         return new Response('Hello from HomeController@index');
     }
+
 
     public function hello(Request $request, string $name): Response
     {

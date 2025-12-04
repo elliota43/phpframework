@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\HomeController;
 use Framework\Routing\Router;
 use Framework\Http\Request;
 use Framework\Http\Response;
@@ -39,6 +40,7 @@ return function (Router $router): void {
 
         return new Response("<pre>" . $out . "</pre>");
     });
+
 
     $router->get('/debug-users', function() {
         $users = User::all();
