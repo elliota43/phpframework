@@ -12,6 +12,7 @@ use Framework\View\View;
 $app = new Application();
 
 View::setBasePath(__DIR__.'/../resources/views');
+View::setCachePath(__DIR__ . '/../storage/views');
 // DB Connection (SQLite example)
 $app->singleton(Connection::class, function() {
     // db file in project root // adjust as needed

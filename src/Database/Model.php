@@ -221,7 +221,23 @@ abstract class Model implements ArrayAccess
 
     public function __get(string $key): mixed
     {
-        return $this->getAttribute($key);
+
+        // 1) normal attribute or accessor
+        if (array_key_exists($key, $this->attributes) || $this->hasGetMutator($key)) {
+            return $this->getAttribute($key);
+        }
+
+
+        // 2) Relationship-style method:
+        //      If there's a method with this name, call it and cache result.
+        if (method_exists($this, $key)) {
+            $value = $this->{$key}(); // e.g. $this->posts()
+            $this->attributes[$key] = $value; // cache so next access is cheap
+            return $value;
+        }
+
+        // 3) fallback
+        return null;
     }
 
     public function __set(string $key, mixed $value): void

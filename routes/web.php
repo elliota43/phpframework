@@ -4,7 +4,7 @@ use App\Http\Controllers\HomeController;
 use Framework\Routing\Router;
 use Framework\Http\Request;
 use Framework\Http\Response;
-
+use Framework\View\View;
 use App\Models\User;
 
 return function (Router $router): void {
@@ -45,6 +45,12 @@ return function (Router $router): void {
 
     $router->get('/user/{user}', function(\App\Models\User $user) {
         var_dump($user);
+    });
+
+    $router->get('/home', function() {
+        $user = User::find(1);
+
+        return View::make('home', ['user' => $user]);
     });
 
     $router->get('/debug-users', function() {

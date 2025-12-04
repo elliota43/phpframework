@@ -1,17 +1,20 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Mini • Home</title>
-    </head>
-    <body>
-        <h1>Welcome to mini</h1>
+<head>
+    <meta charset="UTF-8">
+    <title>Mini • Home</title>
+</head>
+<body>
+    <h1>Welcome, {{ $user->name }}</h1>
 
-        <?php if (isset($name)): ?>
-        <p>Hello, <?= $e($name) ?>!</p>
-    <?php else: ?>
-        <p>Hello, world.</p>
-    <?php endif; ?>
-
-    </body>
+    @if ($user->posts->isEmpty())
+        <p>No posts yet.</p>
+    @else
+        <ul>
+            @foreach ($user->posts as $post)
+                <li>{{ $post->title }}</li>
+            @endforeach
+        </ul>
+    @endif
+</body>
 </html>
