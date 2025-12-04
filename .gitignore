@@ -1,0 +1,16 @@
+.DS_STORE
+/vendor/
+node_modules/
+npm-debug.log
+yarn-error.log
+
+app/storage
+
+public/storage
+
+.env
+.phpunit.result.cache
+/public/build
+/storage/
+.env.production
+

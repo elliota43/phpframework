@@ -1,0 +1,19 @@
+{
+    "name": "elliotanderson/phpframework",
+    "description": "PHP Framework",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Framework\\": "src/",
+            "App\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Elliot Anderson",
+            "email": "elliot.anderson43@gmail.com"
+        }
+    ],
+    "require": {}
+}
