@@ -74,13 +74,25 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate
         foreach ($this->items as $item) {
             if (is_array($item) && array_key_exists($key, $item)) {
                 $values[] = $item[$key];
-            } elseif (is_object($item) && isset($item->{$key})) {
-                $values[] = $item->{$key};
+            } elseif (is_object($item)) {
+                // Handle Model objects with getAttribute
+                if (method_exists($item, 'getAttribute')) {
+                    $values[] = $item->getAttribute($key);
+                } elseif (isset($item->{$key})) {
+                    $values[] = $item->{$key};
+                }
             }
         }
 
-
         return new static($values);
+    }
+
+    /**
+     * Get array of values from pluck
+     */
+    public function pluckToArray(string $key): array
+    {
+        return $this->pluck($key)->all();
     }
 
     public function push(mixed $item): static

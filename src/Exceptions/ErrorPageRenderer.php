@@ -21,8 +21,13 @@ class ErrorPageRenderer
         $sharePlaceholder = '{{__MINI_DEBUG_SHARE_URL__}}';
 
         $traceHtml   = self::renderTrace($e);
+        $traceText   = self::renderTraceText($e);
         $codeHtml    = self::renderCodeExcerpt($e->getFile(), $e->getLine());
         $requestHtml = self::renderRequestContext($request);
+        
+        // Embed trace text data for JavaScript (already JSON-encoded, just need to escape for JS)
+        // traceText is already JSON, so we can embed it directly but need to escape </script>
+        $traceTextEscaped = str_replace('</script>', '<\/script>', $traceText);
 
         return <<<HTML
 <!DOCTYPE html>
@@ -246,6 +251,42 @@ class ErrorPageRenderer
             color: #6b7280;
             text-align: right;
         }
+        .copy-btn {
+            background: #1f2937;
+            border: 1px solid #374151;
+            color: #e5e7eb;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .copy-btn:hover {
+            background: #374151;
+            border-color: #4b5563;
+        }
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+        .copy-btn.copied {
+            background: #22c55e;
+            border-color: #16a34a;
+            color: white;
+        }
+        #error-details {
+            display: none;
+            white-space: pre-wrap;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 12px;
+            background: #020617;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #1f2937;
+            max-height: 400px;
+            overflow: auto;
+            margin-top: 12px;
+        }
     </style>
 </head>
 <body>
@@ -259,11 +300,16 @@ class ErrorPageRenderer
         </div>
 
         <div class="exception-meta">
-            <div class="exception-meta-code">
+            <div class="exception-meta-code" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <span class="badge">Unhandled Exception</span>
-                <span style="margin-left: 8px;">{$title}</span>
+                <span>{$title}</span>
+                <div style="margin-left: auto; display: flex; gap: 8px;">
+                    <button class="copy-btn" data-copy="error" title="Copy error message">📋 Copy Error</button>
+                    <button class="copy-btn" data-copy="trace" title="Copy stack trace">📋 Copy Trace</button>
+                    <button class="copy-btn" data-copy="all" title="Copy full error details">📋 Copy All</button>
+                </div>
             </div>
-            <div class="exception-meta-code" style="margin-top: 6px; color:#f97373;">
+            <div class="exception-meta-code" style="margin-top: 6px; color:#f97373;" id="error-message">
                 {$message}
             </div>
             <div class="exception-meta-path">
@@ -308,16 +354,70 @@ class ErrorPageRenderer
 
 <script>
 (function () {
+    // Trace filter toggles
     const toggles = document.querySelectorAll('.trace-controls [data-toggle]');
     toggles.forEach(function (cb) {
         cb.addEventListener('change', function () {
-            const type = this.getAttribute('data-toggle'); // "app" or "framework"
+            const type = this.getAttribute('data-toggle');
             const items = document.querySelectorAll('.trace-item.' + type);
             items.forEach(function (el) {
                 el.style.display = cb.checked ? '' : 'none';
             });
         });
     });
+
+    // Copy functionality - prepare data
+    const errorMessage = {$traceTextEscaped};
+    const errorData = {
+        error: errorMessage.message,
+        trace: errorMessage.trace,
+        all: errorMessage.all
+    };
+
+    document.querySelectorAll('.copy-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const type = this.getAttribute('data-copy');
+            const text = errorData[type] || '';
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function() {
+                    const originalText = btn.textContent;
+                    btn.textContent = '✓ Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(function() {
+                        btn.textContent = originalText;
+                        btn.classList.remove('copied');
+                    }, 2000);
+                }).catch(function() {
+                    fallbackCopy(text, btn);
+                });
+            } else {
+                fallbackCopy(text, btn);
+            }
+        });
+    });
+
+    function fallbackCopy(text, btn) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Copied!';
+            btn.classList.add('copied');
+            setTimeout(function() {
+                btn.textContent = originalText;
+                btn.classList.remove('copied');
+            }, 2000);
+        } catch (err) {
+            alert('Failed to copy. Please select and copy manually.');
+        }
+        document.body.removeChild(textarea);
+    }
 })();
 </script>
 </body>
@@ -375,6 +475,54 @@ HTML;
         }
 
         return implode("\n", $lines);
+    }
+
+    protected static function renderTraceText(Throwable $e): string
+    {
+        $trace = $e->getTrace();
+        $lines = [];
+
+        // First frame: the exception location itself
+        $lines[] = sprintf(
+            "#0 %s()\n   %s:%d",
+            get_class($e),
+            $e->getFile(),
+            $e->getLine()
+        );
+
+        foreach ($trace as $index => $frame) {
+            $fn = self::formatFunction(
+                $frame['class'] ?? null,
+                $frame['function'] ?? 'unknown',
+                $frame['type'] ?? null
+            );
+
+            $file  = $frame['file'] ?? '[internal function]';
+            $line  = $frame['line'] ?? 0;
+
+            $lines[] = sprintf(
+                "#%d %s\n   %s:%d",
+                $index + 1,
+                $fn,
+                $file,
+                (int) $line
+            );
+        }
+
+        $traceText = implode("\n\n", $lines);
+        $message = $e->getMessage();
+        $file = $e->getFile();
+        $line = $e->getLine();
+        $title = get_class($e);
+
+        // Return as JSON string for embedding in JavaScript
+        $data = [
+            'message' => $message,
+            'trace' => $traceText,
+            'all' => "Exception: {$title}\nMessage: {$message}\nFile: {$file}\nLine: {$line}\n\nStack Trace:\n{$traceText}"
+        ];
+
+        return json_encode($data, JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
     }
 
     protected static function classifyFrame(array $frame): string

@@ -11,22 +11,27 @@
         :root {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             color-scheme: dark;
-            --bg: #020617;
-            --bg-alt: #020617;
-            --bg-elevated: #020617;
+            --bg: #0a0f1a;
+            --bg-alt: #0f1624;
+            --bg-elevated: #141b2d;
             --border-soft: #1e293b;
+            --border-softer: rgba(30, 41, 59, 0.5);
             --accent: #3b82f6;
-            --accent-soft: rgba(59,130,246,0.15);
+            --accent-soft: rgba(59,130,246,0.12);
+            --accent-hover: #2563eb;
             --accent-alt: #22c55e;
-            --text: #e5e7eb;
-            --text-soft: #9ca3af;
-            --code-bg: #020617;
+            --text: #f1f5f9;
+            --text-soft: #94a3b8;
+            --text-softer: #64748b;
+            --code-bg: #0f1624;
+            --code-border: rgba(59, 130, 246, 0.2);
         }
 
         body {
             margin: 0;
-            background: radial-gradient(circle at top, #020617 0, #020617 40%, #020617 100%);
+            background: linear-gradient(180deg, #0a0f1a 0%, #0f1624 100%);
             color: var(--text);
+            line-height: 1.6;
         }
 
         .layout {
@@ -48,14 +53,30 @@
 
         .sidebar {
             border-right: 1px solid var(--border-soft);
-            background: #020617;
+            background: var(--bg-elevated);
             position: sticky;
             top: 0;
             height: 100vh;
-            padding: 18px 18px 24px;
+            padding: 20px 18px 24px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 18px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-soft) transparent;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border-soft);
+            border-radius: 3px;
         }
 
         .brand {
@@ -111,25 +132,29 @@
         .nav-link {
             display: flex;
             align-items: center;
-            gap: 6px;
-            border-radius: 6px;
-            padding: 4px 8px;
+            gap: 8px;
+            border-radius: 8px;
+            padding: 6px 10px;
             color: var(--text-soft);
             text-decoration: none;
             cursor: pointer;
             border: 1px solid transparent;
+            transition: all 0.2s ease;
+            font-size: 14px;
         }
 
         .nav-link:hover {
-            background: rgba(15,23,42,0.9);
-            border-color: var(--border-soft);
+            background: var(--bg-alt);
+            border-color: var(--border-softer);
             color: var(--text);
+            transform: translateX(2px);
         }
 
         .nav-link.active {
             border-color: var(--accent);
             background: var(--accent-soft);
-            color: var(--text);
+            color: var(--accent);
+            font-weight: 500;
         }
 
         .nav-link span.bullet {
@@ -157,9 +182,15 @@
         }
 
         .content {
-            padding: 24px 36px 48px;
-            max-width: 920px;
+            padding: 32px 40px 64px;
+            max-width: 960px;
             margin: 0 auto;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @media (max-width: 900px) {
@@ -173,13 +204,18 @@
         }
 
         .doc-section h1 {
-            font-size: 28px;
-            margin: 0 0 10px;
+            font-size: 32px;
+            margin: 0 0 12px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
         }
 
         .doc-section h2 {
-            font-size: 22px;
-            margin: 28px 0 8px;
+            font-size: 24px;
+            margin: 36px 0 12px;
+            font-weight: 600;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-softer);
         }
 
         .doc-section h3 {
@@ -219,14 +255,16 @@
         }
 
         .code-block {
-            margin: 8px 0 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-soft);
+            margin: 12px 0 16px;
+            border-radius: 10px;
+            border: 1px solid var(--code-border);
             background: var(--code-bg);
-            padding: 10px 12px;
+            padding: 16px 18px;
             overflow-x: auto;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            font-size: 13px;
+            font-size: 13.5px;
+            line-height: 1.5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .code-block pre {
@@ -254,10 +292,16 @@
         }
 
         .card {
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px solid var(--border-soft);
-            background: radial-gradient(circle at top left, rgba(51,65,85,0.35), #020617 55%);
-            padding: 12px 14px 14px;
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
+            padding: 16px 18px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
 
         .card h3 {
@@ -332,6 +376,7 @@
             <div class="sidebar-section-title">Core</div>
             <ul class="nav-list">
                 <li><a class="nav-link" data-target="container"><span class="bullet"></span>Service Container</a></li>
+                <li><a class="nav-link" data-target="providers"><span class="bullet"></span>Service Providers</a></li>
                 <li><a class="nav-link" data-target="http"><span class="bullet"></span>HTTP Kernel &amp; Middleware</a></li>
                 <li><a class="nav-link" data-target="routing"><span class="bullet"></span>Routing &amp; Controllers</a></li>
                 <li><a class="nav-link" data-target="views"><span class="bullet"></span>Views &amp; Templates</a></li>
@@ -389,7 +434,7 @@
                 <div class="card">
                     <h3>Major Pieces</h3>
                     <ul>
-                        <li>Application container &amp; automatic dependency injection.</li>
+                        <li>Service container with dependency injection &amp; service providers.</li>
                         <li>Router with parameter binding &amp; implicit route model binding.</li>
                         <li>View engine with <code>{{ }}</code>, <code>@if</code>, <code>@foreach</code> syntax.</li>
                         <li>Models, relationships, query builder &amp; collections.</li>
@@ -426,7 +471,7 @@ $response = $kernel->handle($request);
 $response->send();</pre></div>
 
             <p>
-                Routes live in <code>routes/web.php</code> and are registered in <code>bootstrap/app.php</code>.
+                Routes live in <code>routes/web.php</code> and are automatically loaded by the <code>RoutingServiceProvider</code>.
             </p>
 
             <div class="code-block"><pre>// routes/web.php
@@ -452,9 +497,11 @@ return function (Router $router): void {
 │   │   ├── Controllers
 │   │   └── Middleware
 │   ├── Models
-│   └── helpers.php
+│   └── Providers
+│       └── AppServiceProvider.php
 ├── bootstrap
-│   └── app.php
+│   ├── app.php
+│   └── providers.php
 ├── public
 │   ├── index.php
 │   └── debug/              # saved debug html snapshots
@@ -485,37 +532,103 @@ return function (Router $router): void {
                 <li>Registering bindings and singletons.</li>
                 <li>Resolving classes (including constructor injection via reflection).</li>
                 <li>Providing debug info about registered services.</li>
+                <li>Managing service provider registration and booting.</li>
             </ul>
 
-            <div class="code-block"><pre>// bootstrap/app.php
+            <div class="code-block"><pre>// bootstrap/app.php (using service providers)
 
 use Framework\Application;
-use Framework\Database\Connection;
-use Framework\Database\Model as BaseModel;
-use Framework\View\View;
+
+require_once __DIR__ . '/../vendor/autoload.php';
 
 $app = new Application();
 
-// DB connection
-$app-&gt;singleton(Connection::class, function () {
-    $dsn = 'sqlite:' . __DIR__ . '/../database.sqlite';
-    return new Connection($dsn);
-});
+// Register service providers
+$providersFile = __DIR__ . '/providers.php';
+if (file_exists($providersFile)) {
+    $providers = require $providersFile;
+    $app-&gt;registerProviders($providers);
+}
 
-// Attach PDO to base Model
-BaseModel::setConnection($app-&gt;make(Connection::class));
-
-// Configure view paths
-View::setBasePath(__DIR__ . '/../resources/views');
-View::setCachePath(__DIR__ . '/../storage/views');
-
-// Register HTTP kernel & router
-$app-&gt;singleton(\Framework\Routing\Router::class, fn () =&gt; new \Framework\Routing\Router($app));
-$app-&gt;singleton(\Framework\Http\Kernel::class, fn () =&gt;
-    new \Framework\Http\Kernel($app, $app-&gt;make(\Framework\Routing\Router::class))
-);
+// Boot all registered providers
+$app-&gt;boot();
 
 return $app;</pre></div>
+
+            <p>
+                Service providers handle all service registration and configuration. See the <a class="inline-link" href="#providers">Service Providers</a> section for more details.
+            </p>
+        </section>
+
+        <!-- SERVICE PROVIDERS -->
+        <section class="doc-section" id="providers">
+            <h2>Service Providers</h2>
+            <p>
+                Service Providers are the central place to configure and bootstrap your application. They organize service registration into logical groups and provide a clean, modular way to set up your framework.
+            </p>
+
+            <h3>Creating a Service Provider</h3>
+            <p>
+                All service providers extend the <code>Framework\Support\ServiceProvider</code> base class:
+            </p>
+
+            <div class="code-block"><pre>// app/Providers/AppServiceProvider.php
+
+namespace App\Providers;
+
+use Framework\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        // Register bindings in the service container
+        $this-&gt;app-&gt;singleton(SomeService::class, function () {
+            return new SomeService();
+        });
+    }
+
+    public function boot(): void
+    {
+        // Boot services after all providers are registered
+    }
+}</pre></div>
+
+            <h3>Registering Service Providers</h3>
+            <p>
+                Service providers are registered in <code>bootstrap/providers.php</code>:
+            </p>
+
+            <div class="code-block"><pre>// bootstrap/providers.php
+
+return [
+    // Framework core providers
+    \Framework\Providers\DatabaseServiceProvider::class,
+    \Framework\Providers\ViewServiceProvider::class,
+    \Framework\Providers\RoutingServiceProvider::class,
+    \Framework\Providers\HttpServiceProvider::class,
+    
+    // Application providers
+    \App\Providers\AppServiceProvider::class,
+];</pre></div>
+
+            <h3>Built-in Service Providers</h3>
+            <p>The framework includes several service providers:</p>
+            <ul>
+                <li><strong>DatabaseServiceProvider</strong> – Registers database connections (SQLite, MySQL, PostgreSQL) and model setup</li>
+                <li><strong>ViewServiceProvider</strong> – Configures view paths and caching</li>
+                <li><strong>RoutingServiceProvider</strong> – Registers router and loads route files</li>
+                <li><strong>HttpServiceProvider</strong> – Registers HTTP kernel</li>
+                <li><strong>ConfigServiceProvider</strong> – Loads configuration files (available)</li>
+                <li><strong>LoggingServiceProvider</strong> – Sets up logging system (available)</li>
+            </ul>
+
+            <div class="card">
+                <span class="badge">tip</span>
+                <p style="margin-top:6px;">
+                    Service providers are registered in order, and all <code>register()</code> methods are called before any <code>boot()</code> methods. This ensures dependencies are available when booting.
+                </p>
+            </div>
         </section>
 
         <!-- HTTP -->
@@ -683,6 +796,108 @@ View::setCachePath(__DIR__ . '/../storage/views');</pre></div>
             </p>
         </section>
 
+        <!-- DATABASE CONFIGURATION -->
+        <section class="doc-section" id="database-config">
+            <h2>Database Configuration</h2>
+            <p>
+                The framework supports multiple database drivers: SQLite, MySQL, and PostgreSQL. Database configuration is managed through <code>config/database.php</code> and environment variables.
+            </p>
+
+            <h3>Configuration File</h3>
+            <p>
+                The <code>config/database.php</code> file defines all available database connections:
+            </p>
+
+            <div class="code-block"><pre>return [
+    'default' => env('DB_CONNECTION', 'sqlite'),
+    'connections' => [
+        'sqlite' => [
+            'driver' => 'sqlite',
+            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+        ],
+        'mysql' => [
+            'driver' => 'mysql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', 3306),
+            'database' => env('DB_DATABASE', 'forge'),
+            'username' => env('DB_USERNAME', 'forge'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+        ],
+        'pgsql' => [
+            'driver' => 'pgsql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', 5432),
+            'database' => env('DB_DATABASE', 'forge'),
+            'username' => env('DB_USERNAME', 'forge'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+        ],
+    ],
+];</pre></div>
+
+            <h3>Environment Variables</h3>
+            <p>
+                Set the following in your <code>.env</code> file to configure your database:
+            </p>
+
+            <div class="code-block"><pre># Default connection
+DB_CONNECTION=sqlite
+
+# SQLite
+DB_DATABASE=database.sqlite
+
+# MySQL
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=myapp
+DB_USERNAME=root
+DB_PASSWORD=secret
+DB_CHARSET=utf8mb4
+
+# PostgreSQL
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=myapp
+DB_USERNAME=postgres
+DB_PASSWORD=secret
+DB_CHARSET=utf8</pre></div>
+
+            <h3>Multiple Connections</h3>
+            <p>
+                You can use multiple database connections in your application:
+            </p>
+
+            <div class="code-block"><pre>use Framework\Database\ConnectionManager;
+
+$manager = app(ConnectionManager::class);
+
+// Get default connection
+$default = $manager->connection();
+
+// Get specific connection
+$read = $manager->connection('read');
+$write = $manager->connection('write');</pre></div>
+
+            <h3>Model Connection Selection</h3>
+            <p>
+                Models can specify which connection to use:
+            </p>
+
+            <div class="code-block"><pre>class User extends Model
+{
+    protected static string $table = 'users';
+    protected static string $connectionName = 'read'; // Use 'read' connection
+}</pre></div>
+
+            <div class="card">
+                <span class="badge">tip</span>
+                <p style="margin-top:6px;">
+                    The framework automatically handles driver-specific SQL differences (identifier quoting, LIMIT/OFFSET syntax, boolean types, etc.) so your code works across all supported databases.
+                </p>
+            </div>
+        </section>
+
         <!-- MODELS -->
         <section class="doc-section" id="models">
             <h2>Models &amp; ActiveRecord</h2>
@@ -779,8 +994,7 @@ User::where('status', 'active');    // Collection&lt;User&gt;</pre></div>
             <div class="card">
                 <span class="badge">note</span>
                 <p style="margin-top:6px;">
-                    The builder currently targets SQLite and focuses on SELECT queries. It is intentionally minimal so
-                    you can read and extend it as needed (joins, aggregates, pagination, etc.).
+                    The builder automatically adapts SQL syntax for SQLite, MySQL, and PostgreSQL. It handles identifier quoting, LIMIT/OFFSET syntax, and data type differences automatically. The builder focuses on SELECT queries and is intentionally minimal so you can read and extend it as needed (joins, aggregates, pagination, etc.).
                 </p>
             </div>
         </section>
@@ -885,8 +1099,9 @@ putenv('APP_DEBUG=true');      // for development
                 <li>Soft deletes and global scopes on models.</li>
                 <li>More query builder features (joins, aggregates, pagination helpers).</li>
                 <li>HTTP testing helpers and an in-memory test kernel.</li>
-                <li>Configuration system (env files, config repository).</li>
+                <li>Enhanced configuration system with environment variable support.</li>
                 <li>Routing groups, middleware per route, named routes and URL generation.</li>
+                <li>Session management, CSRF protection, and authentication.</li>
             </ul>
 
             <div class="divider"></div>

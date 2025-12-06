@@ -13,6 +13,7 @@ class Application
             'migrate' => new MigrateCommand(),
             'migrate:rollback' => new MigrateRollbackCommand(),
             'make:migration' => new MakeMigrationCommand(),
+            'frontend:install' => new Commands\InstallFrontendCommand(),
         ];
 
     }

@@ -11,11 +11,21 @@ class HomeController extends Controller
 {
     public function index(Request $request): Response
     {
-        $html = View::make('home', [
-            'name' => 'Elliot',
-        ]);
+        // Find a user or create a dummy one for demo
+        $user = User::find(1);
+        
+        if (!$user) {
+            // Create a demo user if none exists
+            $user = new User([
+                'id' => 1,
+                'name' => 'Elliot',
+                'email' => 'elliot@example.com',
+            ]);
+        }
 
-        return new Response($html);
+        return View::make('home', [
+            'user' => $user,
+        ]);
     }
 
 

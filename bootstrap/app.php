@@ -3,52 +3,35 @@
 declare(strict_types=1);
 
 use Framework\Application;
-use Framework\Database\Connection;
-use Framework\Http\Kernel;
-use Framework\Routing\Router;
-use Framework\Database\Model as BaseModel;
-use Framework\View\View;
+
+// Load Composer autoloader if available
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
+
+// Load helper functions
+if (file_exists(__DIR__ . '/../src/Support/helpers.php')) {
+    require_once __DIR__ . '/../src/Support/helpers.php';
+}
 
 $app = new Application();
 
-View::setBasePath(__DIR__.'/../resources/views');
-View::setCachePath(__DIR__ . '/../storage/views');
-// DB Connection (SQLite example)
-$app->singleton(Connection::class, function() {
-    // db file in project root // adjust as needed
-    $dsn = 'sqlite:' . __DIR__. '/../database.sqlite';
+// Set global instance for helper functions
+Application::setInstance($app);
 
-    return new Connection($dsn);
-});
+// Register service providers
+$providersFile = __DIR__ . '/providers.php';
+if (file_exists($providersFile)) {
+    $providers = require $providersFile;
+    $app->registerProviders($providers);
+}
 
-BaseModel::setConnection($app->make(Connection::class));
-
-
-$app->bind(Router::class, function (Application $app) {
-    $router = new Router($app);
-
-    // load routes/web.php
-    $routesFile = __DIR__ . '/../routes/web.php';
-
-    if (file_exists($routesFile)) {
-        $defineRoutes = require $routesFile;
-        $defineRoutes($router);
-    }
-
-    return $router;
-});
-
-// Bind Kernel
-$app->bind(Kernel::class, function(Application $app) {
-    return new Kernel(
-        $app,
-        $app->make(Router::class)
-    );
-});
-
+// Register ErrorHandler (can be moved to a provider later)
 $app->singleton(\Framework\Exceptions\ErrorHandler::class, function () {
     return new \Framework\Exceptions\ErrorHandler();
 });
-// later, bind config, views, db, etc.
+
+// Boot all registered providers
+$app->boot();
 
 return $app;

@@ -6,10 +6,12 @@ namespace Framework\Database;
 
 use PDO;
 use Framework\Support\Collection;
+use Framework\Database\SqlBuilder;
 
 class Builder
 {
     protected PDO $pdo;
+    protected Connection $connection;
     protected string $table;
     protected ?string $modelClass;
 
@@ -27,11 +29,62 @@ class Builder
     protected ?int $limit = null;
     protected ?int $offset = null;
 
-    public function __construct(PDO $pdo, string $table, ?string $modelClass = null)
+    public function __construct(PDO $pdo, string $table, ?string $modelClass = null, ?Connection $connection = null)
     {
         $this->pdo        = $pdo;
         $this->table      = $table;
         $this->modelClass = $modelClass;
+        
+        // Store connection for driver access
+        // If not provided, try to get it from a static connection if available
+        if ($connection === null) {
+            // Try to create a connection from PDO (for backward compatibility)
+            // This is a fallback - ideally connection should always be provided
+            $this->connection = $this->createConnectionFromPdo($pdo);
+        } else {
+            $this->connection = $connection;
+        }
+    }
+
+    /**
+     * Create a connection wrapper from PDO (backward compatibility)
+     */
+    protected function createConnectionFromPdo(PDO $pdo): Connection
+    {
+        // This is a workaround for backward compatibility
+        // In the future, Builder should always receive a Connection
+        $connection = new \ReflectionClass(Connection::class);
+        $instance = $connection->newInstanceWithoutConstructor();
+        $pdoProperty = $connection->getProperty('pdo');
+        $pdoProperty->setAccessible(true);
+        $pdoProperty->setValue($instance, $pdo);
+        
+        return $instance;
+    }
+
+    /**
+     * Apply a scope to the query
+     */
+    public function scope(string $name, ...$parameters): self
+    {
+        if ($this->modelClass && method_exists($this->modelClass, 'scope' . ucfirst($name))) {
+            $method = 'scope' . ucfirst($name);
+            $this->modelClass::$method($this, ...$parameters);
+        }
+        return $this;
+    }
+
+    /**
+     * Magic method to call scopes dynamically
+     */
+    public function __call(string $method, array $parameters): self
+    {
+        // Check if it's a scope method
+        if ($this->modelClass && method_exists($this->modelClass, 'scope' . ucfirst($method))) {
+            return $this->scope($method, ...$parameters);
+        }
+
+        throw new \BadMethodCallException("Method {$method} does not exist on " . static::class);
     }
 
     /**
@@ -86,38 +139,24 @@ class Builder
 
     protected function compileSelect(): array
     {
-        $sql      = 'SELECT * FROM ' . $this->table;
+        $driver = $this->connection->getDriver();
+        $quotedTable = $driver->quoteIdentifier($this->table);
+        
+        $sql      = 'SELECT * FROM ' . $quotedTable;
         $bindings = [];
 
-        if ($this->wheres) {
-            $parts = [];
-            foreach ($this->wheres as $index => [$boolean, $column, $operator, $value]) {
-                $clause = $column . ' ' . $operator . ' ?';
-                if ($index === 0) {
-                    $parts[] = $clause;
-                } else {
-                    $parts[] = $boolean . ' ' . $clause;
-                }
-                $bindings[] = $value;
-            }
+        // Build WHERE clause using SqlBuilder
+        $whereClause = SqlBuilder::buildWhereClause($this->wheres, $driver, $bindings);
+        $sql .= $whereClause;
 
-            $sql .= ' WHERE ' . implode(' ', $parts);
-        }
+        // Build ORDER BY clause using SqlBuilder
+        $orderByClause = SqlBuilder::buildOrderByClause($this->orders, $driver);
+        $sql .= $orderByClause;
 
-        if ($this->orders) {
-            $orderParts = [];
-            foreach ($this->orders as [$column, $dir]) {
-                $orderParts[] = $column . ' ' . $dir;
-            }
-            $sql .= ' ORDER BY ' . implode(', ', $orderParts);
-        }
-
-        if ($this->limit !== null) {
-            $sql .= ' LIMIT ' . $this->limit;
-        }
-
-        if ($this->offset !== null) {
-            $sql .= ' OFFSET ' . $this->offset;
+        // Use driver's compileLimit method
+        $limitClause = $driver->compileLimit($this->limit, $this->offset);
+        if ($limitClause) {
+            $sql .= ' ' . $limitClause;
         }
 
         return [$sql, $bindings];

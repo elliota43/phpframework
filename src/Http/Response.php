@@ -43,4 +43,14 @@ class Response
     {
         return $this->status;
     }
+
+    public function getBody(): string
+    {
+        return $this->content;
+    }
+
+    public function getHeaders(): array
+    {
+        return $this->headers;
+    }
 }

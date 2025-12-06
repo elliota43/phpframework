@@ -1,0 +1,17 @@
+{
+    "name": "elliotanderson/mini-blog-example",
+    "description": "Example blog application built with the mini framework",
+    "type": "project",
+    "require": {
+        "php": ">=8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Examples\\Blog\\": "app/"
+        }
+    },
+    "scripts": {
+        "setup": "php bin/setup.php",
+        "serve": "php -S 127.0.0.1:9080 -t public public/index.php"
+    }
+}

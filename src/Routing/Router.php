@@ -13,12 +13,20 @@ use ReflectionMethod;
 
 class Router
 {
+    use SPARouteHelper;
+
     /**
      * @var array<string, array<int, array{uri:string,regex:string,params:array,action:mixed}>>
      */
     protected array $routes = [];
 
     protected array $namedRoutes = [];
+
+    /**
+     * Cache for reflection objects to avoid repeated instantiation
+     * @var array<string, ReflectionMethod|ReflectionFunction>
+     */
+    protected array $reflectionCache = [];
 
     public function __construct(
         protected Application $app
@@ -67,13 +75,30 @@ class Router
     protected function addRoute(string $method, string $uri, mixed $action): RouteDefinition
     {
         [$regex, $paramNames] = $this->compileUri($uri);
+        
+        // Check if route has parameters (fast path optimization)
+        $hasParameters = str_contains($uri, '{');
 
-        $this->routes[$method][] = [
+        $routeData = [
             'uri'    => $uri,
             'regex'  => $regex,
             'params' => $paramNames,
             'action' => $action,
+            'hasParameters' => $hasParameters,
         ];
+
+        // Initialize routes array for method if needed
+        if (!isset($this->routes[$method])) {
+            $this->routes[$method] = [];
+        }
+        
+        // Store exact matches first for fast lookup
+        if (!$hasParameters) {
+            // Insert at beginning for faster matching
+            array_unshift($this->routes[$method], $routeData);
+        } else {
+            $this->routes[$method][] = $routeData;
+        }
 
         return new RouteDefinition($this, $method, $uri, $action);
     }
@@ -81,12 +106,20 @@ class Router
     protected function compileUri(string $uri): array
     {
         // e.g. "/hello/{name}" -> "#^/hello/([^/]+)$#"
+        // Special case: "{path}" matches multiple segments for SPA catch-all
         $paramNames = [];
 
         $pattern = preg_replace_callback(
             '#\{([^}]+)\}#',
-            function ($matches) use (&$paramNames) {
-                $paramNames[] = $matches[1];
+            function ($matches) use (&$paramNames, $uri) {
+                $paramName = $matches[1];
+                $paramNames[] = $paramName;
+                
+                // If param is "path", allow multiple segments for SPA routing
+                if ($paramName === 'path') {
+                    return '(.+)';
+                }
+                
                 return '([^/]+)';
             },
             $uri
@@ -107,16 +140,20 @@ class Router
         }
 
         foreach ($this->routes[$method] as $route) {
+            // Fast path: exact string match for routes without parameters
+            if (!($route['hasParameters'] ?? false)) {
+                if ($route['uri'] === $path) {
+                    return $this->callAction($route['action'], []);
+                }
+                continue; // Skip regex matching for exact routes
+            }
+
+            // Slow path: regex matching for routes with parameters
             if (preg_match($route['regex'], $path, $matches)) {
                 // $matches[0] is the full match, so drop it
                 array_shift($matches);
 
-                $params = [];
-
-                foreach ($route['params'] as $index => $name) {
-                    $params[$name] = $matches[$index] ?? null;
-                }
-
+                $params = $this->extractRouteParams($route['params'], $matches);
                 return $this->callAction($route['action'], $params);
             }
         }
@@ -178,16 +215,56 @@ class Router
         return new Response((string) $result);
     }
 
-    protected function callWithDependencies(callable $callable, array $routeParams = []): mixed
+    /**
+     * Get or create a cached reflection object for a callable
+     */
+    protected function getReflection(callable $callable): ReflectionMethod|ReflectionFunction
     {
-        // figure out what kind of callable we have
+        $cacheKey = $this->getCallableCacheKey($callable);
+        
+        if (isset($this->reflectionCache[$cacheKey])) {
+            return $this->reflectionCache[$cacheKey];
+        }
+
         if (is_array($callable)) {
             // [object, 'method'] or [class-string, 'method']
-            $reflection = new ReflectionMethod($callable[0], $callable[1]);
-        } else {
-            // closure or function name
+            $class = is_object($callable[0]) ? get_class($callable[0]) : $callable[0];
+            $reflection = new ReflectionMethod($class, $callable[1]);
+        } elseif (is_string($callable)) {
+            // Function name - cacheable
             $reflection = new ReflectionFunction($callable);
+        } else {
+            // Closure - cannot cache effectively, create new each time
+            $reflection = new ReflectionFunction($callable);
+            return $reflection; // Don't cache closures
         }
+
+        // Cache reflection for non-closures
+        $this->reflectionCache[$cacheKey] = $reflection;
+        return $reflection;
+    }
+
+    /**
+     * Generate a cache key for a callable
+     */
+    protected function getCallableCacheKey(callable $callable): string
+    {
+        if (is_array($callable)) {
+            $class = is_object($callable[0]) ? get_class($callable[0]) : $callable[0];
+            return 'method:' . $class . '::' . $callable[1];
+        }
+        
+        if (is_string($callable)) {
+            return 'function:' . $callable;
+        }
+        
+        // For closures, use a unique identifier (not cacheable effectively)
+        return 'closure:' . spl_object_hash($callable);
+    }
+
+    protected function callWithDependencies(callable $callable, array $routeParams = []): mixed
+    {
+        $reflection = $this->getReflection($callable);
 
         $resolvedArgs = [];
 
@@ -229,7 +306,21 @@ class Router
 
             // 2) Match by parameter name from route params: /posts/{id}
             if (array_key_exists($name, $routeParams)) {
-                $resolvedArgs[] = $routeParams[$name];
+                $value = $routeParams[$name];
+                
+                // Type coercion based on parameter type hint
+                if ($type && $type->isBuiltin()) {
+                    $typeName = $type->getName();
+                    if ($typeName === 'int') {
+                        $value = (int) $value;
+                    } elseif ($typeName === 'float') {
+                        $value = (float) $value;
+                    } elseif ($typeName === 'bool') {
+                        $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+                    }
+                }
+                
+                $resolvedArgs[] = $value;
                 continue;
             }
 
@@ -247,5 +338,17 @@ class Router
 
         // finally call the controller/closure with the resolved arguments
         return $callable(...$resolvedArgs);
+    }
+
+    /**
+     * Extract route parameters from regex matches
+     */
+    protected function extractRouteParams(array $paramNames, array $matches): array
+    {
+        $params = [];
+        foreach ($paramNames as $index => $name) {
+            $params[$name] = $matches[$index] ?? null;
+        }
+        return $params;
     }
 }

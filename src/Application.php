@@ -4,16 +4,56 @@ declare(strict_types=1);
 
 namespace Framework;
 
+use Framework\Support\ServiceProvider;
 use ReflectionClass;
 use ReflectionParameter;
 
 class Application
 {
+    protected static ?Application $instance = null;
+
     protected array $bindings = [];
 
     protected array $singletons = [];
 
     protected array $instances = [];
+
+    /**
+     * @var ServiceProvider[]
+     */
+    protected array $serviceProviders = [];
+
+    protected array $loadedProviders = [];
+
+    protected bool $booted = false;
+
+    /**
+     * Cache for ReflectionClass objects to avoid repeated instantiation
+     * @var array<string, ReflectionClass>
+     */
+    protected array $reflectionCache = [];
+
+    /**
+     * Cache for constructor ReflectionMethod objects
+     * @var array<string, ReflectionMethod|null>
+     */
+    protected array $constructorCache = [];
+
+    /**
+     * Get the globally accessible application instance
+     */
+    public static function getInstance(): ?Application
+    {
+        return static::$instance;
+    }
+
+    /**
+     * Set the globally accessible application instance
+     */
+    public static function setInstance(Application $app): void
+    {
+        static::$instance = $app;
+    }
 
     public function debugBindings(): array
     {
@@ -44,6 +84,7 @@ class Application
     {
         $this->instances[$abstract] = $instance;
     }
+    
     public function make(string $abstract): mixed
     {
         // if we already have a singleton instance
@@ -76,13 +117,13 @@ class Application
 
     protected function build(string $concrete): mixed
     {
-        $reflector = new ReflectionClass($concrete);
+        $reflector = $this->getReflectionClass($concrete);
 
         if (! $reflector->isInstantiable()) {
             throw new \RuntimeException("Class {$concrete} is not instantiable.");
         }
 
-        $constructor = $reflector->getConstructor();
+        $constructor = $this->getConstructor($reflector);
 
         if (! $constructor) {
             return new $concrete();
@@ -96,23 +137,83 @@ class Application
         return $reflector->newInstanceArgs($dependencies);
     }
 
+    /**
+     * Get or create a cached ReflectionClass for a class name
+     */
+    protected function getReflectionClass(string $className): ReflectionClass
+    {
+        if (!isset($this->reflectionCache[$className])) {
+            $this->reflectionCache[$className] = new ReflectionClass($className);
+        }
+
+        return $this->reflectionCache[$className];
+    }
+
+    /**
+     * Get or create a cached constructor ReflectionMethod
+     */
+    protected function getConstructor(ReflectionClass $reflection): ?ReflectionMethod
+    {
+        $className = $reflection->getName();
+        
+        if (!array_key_exists($className, $this->constructorCache)) {
+            $this->constructorCache[$className] = $reflection->getConstructor();
+        }
+
+        return $this->constructorCache[$className];
+    }
+
     protected function resolveParameter(ReflectionParameter $param): mixed
     {
         $type = $param->getType();
 
-        // only handle class types for now
-        if ($type && !$type->isBuiltin()) {
-            $className = $type->getName();
-            return $this->make($className);
+        if (! $type || $type->isBuiltin()) {
+            throw new \RuntimeException("Cannot resolve parameter {$param->getName()}");
         }
 
-        // if there's a default value, use it
-        if ($param->isDefaultValueAvailable()) {
-            return $param->getDefaultValue();
+        return $this->make($type->getName());
+    }
+
+    public function registerProviders(array $providers): void
+    {
+        foreach ($providers as $provider) {
+            $this->registerProvider($provider);
+        }
+    }
+
+    protected function registerProvider(string $provider): void
+    {
+        if (isset($this->loadedProviders[$provider])) {
+            return;
         }
 
-        throw new \RuntimeException(
-            "Cannot resolve parameter \${$param->getName()} on {$param->getDeclaringClass()->getName()}"
-        );
+        $instance = new $provider($this);
+        $instance->register();
+
+        $this->serviceProviders[] = $instance;
+        $this->loadedProviders[$provider] = true;
+    }
+
+    public function boot(): void
+    {
+        if ($this->booted) {
+            return;
+        }
+
+        foreach ($this->serviceProviders as $provider) {
+            $provider->boot();
+        }
+
+        $this->booted = true;
+    }
+
+    public function getProviders(): array
+    {
+        return $this->serviceProviders;
+    }
+
+    public function isBooted(): bool
+    {
+        return $this->booted;
     }
 }

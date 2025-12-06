@@ -1,0 +1,7 @@
+/vendor/
+.env
+database.sqlite
+storage/views/*
+!.gitkeep
+.DS_Store
+

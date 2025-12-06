@@ -61,7 +61,8 @@ class View
         }
 
         // make $data available as variables
-        extract($data, EXTR_SKIP);
+        // Use EXTR_OVERWRITE to ensure data variables take precedence over function parameters
+        extract($data, EXTR_OVERWRITE);
 
         ob_start();
         require $cachePath;

@@ -1,0 +1,110 @@
+<?php
+
+use Framework\Database\Migration;
+use Framework\Database\Connection;
+
+return new class extends Migration
+{
+    public function up(Connection $connection): void
+    {
+        $this->createTable($connection, 'columns', function ($table) {
+            $table->id();
+            $table->integer('board_id');
+            $table->text('name');
+            $table->integer('wip_limit')->nullable();
+            $table->integer('position')->default(0);
+            $table->timestamps();
+            
+            $table->foreign('board_id')
+                  ->references('boards', 'id')
+                  ->onDelete('cascade');
+        });
+
+        // Example 1: Create a table using the schema builder
+        // $this->createTable($connection, 'table_name', function ($table) {
+        //     $table->id();                                    // Auto-incrementing primary key
+        //     $table->string('name');                          // VARCHAR(255)
+        //     $table->string('email')->unique();               // Unique constraint
+        //     $table->text('description')->nullable();         // Nullable TEXT
+        //     $table->integer('age')->nullable();              // Nullable INTEGER
+        //     $table->boolean('is_active')->default(false);    // Boolean with default
+        //     $table->decimal('price', 10, 2);                 // DECIMAL(10, 2)
+        //     $table->timestamp('created_at')->nullable();     // TIMESTAMP
+        //     $table->timestamps();                            // created_at and updated_at
+        //     
+        //     // Indexes
+        //     $table->index('email');
+        //     $table->unique(['email', 'username']);
+        //     
+        //     // Foreign keys
+        //     $table->integer('user_id');
+        //     $table->foreign('user_id')
+        //           ->references('users', 'id')
+        //           ->onDelete('cascade');
+        // });
+
+        // Example 2: Using the Schema helper (alternative syntax)
+        // $this->schema($connection, function ($schema) {
+        //     $schema->create('posts', function ($table) {
+        //         $table->id();
+        //         $table->integer('user_id');
+        //         $table->foreign('user_id')
+        //               ->references('users', 'id')
+        //               ->cascade();
+        //         $table->string('title');
+        //         $table->text('body');
+        //         $table->timestamps();
+        //     });
+        // });
+
+        // Example 3: Modify an existing table
+        // $this->table($connection, 'users', function ($table) {
+        //     $table->string('phone')->nullable();
+        //     $table->dropColumn('old_column');
+        //     $table->renameColumn('old_name', 'new_name');
+        //     $table->index('phone');
+        // });
+
+        // Example 4: Drop a table
+        // $this->dropTable($connection, 'table_name');
+
+        // Example 5: Common column types
+        // $table->bigId();                      // BIGINT primary key
+        // $table->string('name', 100);          // VARCHAR(100)
+        // $table->text('content');              // TEXT
+        // $table->mediumText('content');        // MEDIUMTEXT (MySQL)
+        // $table->longText('content');          // LONGTEXT (MySQL)
+        // $table->integer('count');             // INTEGER
+        // $table->bigInteger('count');          // BIGINT
+        // $table->smallInteger('count');        // SMALLINT
+        // $table->tinyInteger('count');         // TINYINT (MySQL)
+        // $table->boolean('active');            // BOOLEAN/INTEGER
+        // $table->decimal('amount', 8, 2);      // DECIMAL(8, 2)
+        // $table->float('rate');                // FLOAT
+        // $table->double('rate');               // DOUBLE
+        // $table->date('birthday');             // DATE
+        // $table->dateTime('published_at');     // DATETIME/TIMESTAMP
+        // $table->time('start_time');           // TIME
+        // $table->timestamp('deleted_at');      // TIMESTAMP
+        // $table->json('metadata');             // JSON
+        // $table->jsonb('metadata');            // JSONB (PostgreSQL)
+        // $table->uuid('uuid');                 // UUID
+        // $table->ipAddress('ip');              // VARCHAR(45) for IPv6
+        // $table->macAddress('mac');            // VARCHAR(17)
+        // $table->binary('data');               // BLOB
+    }
+
+    public function down(Connection $connection): void
+    {
+        // Rollback logic - typically the reverse of up()
+        // Example:
+        // $this->dropTable($connection, 'table_name');
+        
+        // Or using Schema helper:
+        // $this->schema($connection, function ($schema) {
+        //     $schema->dropIfExists('table_name');
+        // });
+
+        $this->dropTable($connection, 'columns');
+    }
+};

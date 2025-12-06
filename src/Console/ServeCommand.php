@@ -7,7 +7,7 @@ class ServeCommand
     public function handle(array $args = []): void
     {
         $host = '127.0.0.1';
-        $port = 9003;
+        $port = 9010;
 
         $docRoot = realpath(__DIR__ .'/../../public');
         echo "Mini framework development server started:\n";

@@ -10,19 +10,56 @@ class MigrateRollbackCommand
 {
     public function handle(array $args = []): void
     {
-        $dsn = 'sqlite:' . getcwd() .'/database.sqlite';
-        $connection = new Connection($dsn);
+        // Get connection from ConnectionManager if available
+        $app = \Framework\Application::getInstance();
+        $connection = null;
+        
+        if ($app) {
+            try {
+                $manager = $app->make(\Framework\Database\ConnectionManager::class);
+                $connection = $manager->connection();
+            } catch (\Exception $e) {
+                // Fallback to default
+            }
+        }
+        
+        // Fallback to SQLite if ConnectionManager not available
+        if (!$connection) {
+            $dsn = 'sqlite:' . getcwd() . '/database.sqlite';
+            $connection = new Connection($dsn);
+        }
+        
         $pdo = $connection->pdo();
-
-        // make sure migrations table exists.
+        $driver = $connection->getDriver();
+        
+        // make sure migrations table exists (driver-aware)
+        $quotedTable = $driver->quoteIdentifier('migrations');
+        $driverName = $driver->getName();
+        $idType = $driver->getAutoIncrementType();
+        
+        // Use VARCHAR for migration name (needed for UNIQUE constraint in MySQL)
+        // SQLite can use TEXT, but VARCHAR works fine for all drivers
+        $migrationType = 'VARCHAR(255)';
+        
+        // Driver-specific timestamp type
+        if ($driverName === 'pgsql') {
+            $timestampType = 'TIMESTAMP';
+        } elseif ($driverName === 'mysql') {
+            $timestampType = 'DATETIME';
+        } else {
+            $timestampType = 'TEXT'; // SQLite
+        }
+        
+        $intType = 'INTEGER';
+        
         $pdo->exec(<<<SQL
-        CREATE TABLE IF NOT EXISTS migrations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            migration TEXT NOT NULL UNIQUE,
-            batch INTEGER NOT NULL,
-            ran_at TEXT NOT NULL
-        );
-        SQL);
+CREATE TABLE IF NOT EXISTS {$quotedTable} (
+    id {$idType},
+    migration {$migrationType} NOT NULL UNIQUE,
+    batch {$intType} NOT NULL,
+    ran_at {$timestampType} NOT NULL
+);
+SQL);
 
         $maxBatch = $pdo->query('SELECT MAX(batch) FROM migrations')->fetchColumn();
 
