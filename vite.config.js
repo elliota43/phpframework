@@ -7,7 +7,10 @@ export default defineConfig({
         outDir: 'public/build',
         manifest: true,
         rollupOptions: {
-            input: 'resources/js/app.jsx',
+            input: {
+                app: 'resources/js/app.jsx',
+                css: 'resources/css/app.css',
+            },
         },
     },
     server: {
@@ -17,5 +20,8 @@ export default defineConfig({
         hmr: {
             host: 'localhost',
         },
+    },
+    css: {
+        postcss: './postcss.config.js',
     },
 });

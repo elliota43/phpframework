@@ -23,6 +23,7 @@ import {
     AlertCircle, CheckCircle2, Clock, MoreVertical, GripVertical,
     ChevronLeft, ChevronRight
 } from 'lucide-react';
+import '../css/app.css';
 
 // ============= Utility Functions =============
 
@@ -131,7 +132,7 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }) {
 
 // ============= Task Edit Modal =============
 
-function TaskEditModal({ task, isOpen, onClose, onSave, boardId }) {
+function TaskEditModal({ task, isOpen, onClose, onSave, boardId, columnId: initialColumnId, columns = [] }) {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -139,6 +140,7 @@ function TaskEditModal({ task, isOpen, onClose, onSave, boardId }) {
         status: 'open',
         assignee: '',
         due_date: '',
+        column_id: null,
     });
     const [saving, setSaving] = useState(false);
 
@@ -151,9 +153,21 @@ function TaskEditModal({ task, isOpen, onClose, onSave, boardId }) {
                 status: task.status || 'open',
                 assignee: task.assignee || '',
                 due_date: task.due_date ? task.due_date.split('T')[0] : '',
+                column_id: task.column_id || null,
+            });
+        } else {
+            // Reset for new task
+            setFormData({
+                title: '',
+                description: '',
+                priority: 'medium',
+                status: 'open',
+                assignee: '',
+                due_date: '',
+                column_id: initialColumnId || (columns.length > 0 ? columns[0].id : null),
             });
         }
-    }, [task]);
+    }, [task, initialColumnId, columns]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -246,17 +260,45 @@ function TaskEditModal({ task, isOpen, onClose, onSave, boardId }) {
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Assignee
-                    </label>
-                    <input
-                        type="text"
-                        value={formData.assignee}
-                        onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
-                        className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Assignee name"
-                    />
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                            Column {!task && '*'}
+                        </label>
+                        {!task && columns.length > 0 ? (
+                            <select
+                                value={formData.column_id || ''}
+                                onChange={(e) => setFormData({ ...formData, column_id: parseInt(e.target.value) })}
+                                className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required={!task}
+                            >
+                                {columns.map((col) => (
+                                    <option key={col.id} value={col.id}>
+                                        {col.name}
+                                    </option>
+                                ))}
+                            </select>
+                        ) : (
+                            <input
+                                type="text"
+                                value={columns.find(c => c.id === formData.column_id)?.name || ''}
+                                className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-700 text-slate-400 cursor-not-allowed"
+                                disabled
+                            />
+                        )}
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                            Assignee
+                        </label>
+                        <input
+                            type="text"
+                            value={formData.assignee}
+                            onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
+                            className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Assignee name"
+                        />
+                    </div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
@@ -578,6 +620,7 @@ function KanbanApp(props = {}) {
     const [activeTask, setActiveTask] = useState(null);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState(null);
+    const [newTaskColumnId, setNewTaskColumnId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterPriority, setFilterPriority] = useState('');
     const [draggedTask, setDraggedTask] = useState(null);
@@ -677,11 +720,8 @@ function KanbanApp(props = {}) {
 
     const handleCreateTask = (columnId) => {
         setEditingTask(null);
+        setNewTaskColumnId(columnId);
         setEditModalOpen(true);
-        // Store column_id in a ref or state for the modal
-        if (typeof columnId !== 'undefined') {
-            setEditingTask({ column_id: columnId });
-        }
     };
 
     const handleEditTask = (task) => {
@@ -842,9 +882,12 @@ function KanbanApp(props = {}) {
                 onClose={() => {
                     setEditModalOpen(false);
                     setEditingTask(null);
+                    setNewTaskColumnId(null);
                 }}
                 onSave={handleSaveTask}
                 boardId={boardId}
+                columnId={editingTask?.column_id || newTaskColumnId || null}
+                columns={columns}
             />
         </DndContext>
     );

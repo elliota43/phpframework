@@ -102,14 +102,23 @@ class KanbanController extends Controller
             'position'    => $nextPosition,
         ]);
 
-        if ($task->save()) {
-            return $this->jsonResponse([
-                'message' => 'Task created',
-                'data'    => $task->toArray(),
-            ], 201);
-        }
+        try {
+            if ($task->save()) {
+                return $this->jsonResponse([
+                    'message' => 'Task created',
+                    'data'    => $task->toArray(),
+                ], 201);
+            }
 
-        return $this->jsonResponse(['error' => 'Failed to create task'], 500);
+            return $this->jsonResponse(['error' => 'Failed to create task'], 500);
+        } catch (\Throwable $e) {
+            return $this->jsonResponse([
+                'error' => 'Failed to create task',
+                'message' => $e->getMessage(),
+                'file' => basename($e->getFile()),
+                'line' => $e->getLine(),
+            ], 500);
+        }
     }
     /**
      * Update a task.

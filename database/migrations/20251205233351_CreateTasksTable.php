@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('status', 100)->nullable();
             $table->string('priority', 100)->nullable();
             $table->string('assignee')->nullable();
+            $table->date('due_date')->nullable();
             $table->integer('position')->default(0);
             $table->timestamps();
             $table->foreign('board_id')->references('boards', 'id');
